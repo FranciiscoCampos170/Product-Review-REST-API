@@ -2,84 +2,78 @@
 
 namespace App\Http\Controllers;
 
+use App\Product;
 use App\Review;
 use Illuminate\Http\Request;
 
 class ReviewController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function index()
+    public function __construct()
     {
-        //
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        //
+        $this->middleware('auth');
     }
 
     /**
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Product  $product
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(Request $request, Product $product)
     {
-        //
-    }
+        $request->validate([
+            'review' => 'required|string',
+            'rating' => 'required|numeric|min:0|max:5',
+        ]);
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  \App\Review  $review
-     * @return \Illuminate\Http\Response
-     */
-    public function show(Review $review)
-    {
-        //
-    }
+        $review = new Review;
+        $review->review = $request->review;
+        $review->rating = $request->rating;
+        $review->user_id = auth()->user()->id;
 
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Review  $review
-     * @return \Illuminate\Http\Response
-     */
-    public function edit(Review $review)
-    {
-        //
+        $product->reviews()->save($review);
+        return response()->json(['message' => 'Review Added', 'review' => $review]);
     }
 
     /**
      * Update the specified resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Product  $product
      * @param  \App\Review  $review
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Review $review)
+    public function update(Request $request, Product $product, Review $review)
     {
-        //
+        if (auth()->user()->id !== $review->user_id) {
+            return response()->json(['message' => 'Action Forbidden']);
+        }
+        $request->validate([
+            'review' => 'required|string',
+            'rating' => 'required|numeric|min:0|max:5',
+        ]);
+
+        $review->review = $request->review;
+        $review->rating = $request->rating;
+        $review->save();
+
+        return response()->json(['message' => 'Review Updated', 'review' => $review]);
     }
 
     /**
      * Remove the specified resource from storage.
      *
+     * @param  \App\Product  $product
      * @param  \App\Review  $review
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Review $review)
+    public function destroy(Product $product, Review $review)
     {
-        //
+        if (auth()->user()->id !== $review->user_id) {
+            return response()->json(['message' => 'Action Forbidden']);
+        }
+        $review->delete();
+        return response()->json(null, 204);
     }
 }
